@@ -4,6 +4,7 @@ import subprocess
 import argparse
 import os
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.DEBUG, format=" - %(message)s")
 ERRONOUS_PASSWORD_TRIES = 0
@@ -48,37 +49,65 @@ def login_required(handler):
 async def handle(request):
     logging.info("HANDLE_SCRIPT")
     script_name = request.match_info.get("script_name")
+
     if script_name:
         scripts_folder = os.path.join(
             os.getcwd(), request.app.get("scripts_folder", "")
         )
         script_path = os.path.join(scripts_folder, script_name)
+
         if os.path.exists(script_path):
             try:
-                result = subprocess.run(
-                    ["bash", script_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                process = await asyncio.create_subprocess_exec(
+                    "bash",
+                    script_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
                 )
-                return web.json_response(
-                    {
-                        "status": "success",
-                        "output": result.stdout.decode("utf-8"),
-                        "error": result.stderr.decode("utf-8"),
-                    }
-                )
+
+                response = web.StreamResponse()
+                await response.prepare(request)
+
+                while True:
+                    stdout_data = await process.stdout.readline()
+                    stderr_data = await process.stderr.readline()
+
+                    if not stdout_data and not stderr_data:
+                        break
+
+                    if stdout_data:
+                        await response.write(stdout_data)
+                    if stderr_data:
+                        await response.write(stderr_data)
+
+                await response.write_eof()
+
+                # Wait for the process to finish and get the return code
+                return_code = await process.wait()
+
+                # If the process exits with a non-zero code, handle the error
+                if return_code != 0:
+                    error_message = f"Script execution failed with return code {return_code}"
+                    await response.write(error_message.encode("utf-8"))
+
+            except asyncio.CancelledError:
+                logging.error("Request cancelled by the client")
+                raise
             except Exception as e:
-                return web.json_response(
-                    {"status": "error", "error_message": str(e)}
-                )
+                logging.error(f"Error occurred: {str(e)}")
+                return web.Response(text=f"Error: {str(e)}", status=500)
+            finally:
+                # Close the subprocess after streaming output
+                process.stdout.close()
+                process.stderr.close()
+
+            return response
+
         else:
-            return web.json_response(
-                {"status": "error", "error_message": "Script not found"}
-            )
+            return web.Response(text="Error: Script not found", status=404)
+
     else:
-        return web.json_response(
-            {"status": "error", "error_message": "No script name provided"}
-        )
+        return web.Response(text="Error: No script name provided", status=400)
 
 
 async def handle_status(request):
