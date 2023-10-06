@@ -21,6 +21,7 @@ async def check_authenticated(request):
     if int(
         request.app.get("sensitive")
     ) != -1 and ERRONOUS_PASSWORD_TRIES >= int(request.app.get("sensitive")):
+        logging.critical("Too many erronous tries")
         os._exit(-1)
     return False
 
