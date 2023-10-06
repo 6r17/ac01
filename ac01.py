@@ -10,6 +10,7 @@ ERRONOUS_PASSWORD_TRIES = 0
 
 
 async def check_authenticated(request):
+    print("check_authenticated")
     global ERRONOUS_PASSWORD_TRIES
     token = request.headers.get("Authorization")
     if not request.app.get("auth_password", None):
@@ -25,6 +26,7 @@ async def check_authenticated(request):
 
 
 async def login_required_middleware(request, handler):
+    print("login required middleware")
     authenticated = await check_authenticated(request)
     if not authenticated:
         return web.Response(text="Unauthorized", status=401)
@@ -32,6 +34,8 @@ async def login_required_middleware(request, handler):
 
 
 def login_required(handler):
+    print("login required")
+
     async def wrapped_handler(request):
         return await login_required_middleware(request, handler)
 
@@ -40,6 +44,7 @@ def login_required(handler):
 
 @login_required
 async def handle(request):
+    print("HANDLE_SCRIPT")
     script_name = request.match_info.get("script_name")
     if script_name:
         scripts_folder = os.path.join(
@@ -75,6 +80,7 @@ async def handle(request):
 
 
 async def handle_status(request):
+    print("HANDLE_STATUS")
     return web.json_response({"status": "ok"})
 
 
@@ -164,7 +170,9 @@ def run():
 
     ssl_context = create_ssl_context(CERT_FILE, KEY_FILE)
 
-    web.run_app(app, host="0.0.0.0", port=PORT, ssl_context=ssl_context)
+    web.run_app(
+        app, host=HOST, port=PORT, ssl_context=ssl_context, access_log=None
+    )
 
 
 if __name__ == "__main__":
