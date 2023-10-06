@@ -18,6 +18,7 @@ async def check_authenticated(request):
     if token == request.app.get("auth_password"):
         return True
     ERRONOUS_PASSWORD_TRIES += 1
+    logging.info(f'sensitivity: {request.app.get("sensitive")}')
     if int(
         request.app.get("sensitive")
     ) != -1 and ERRONOUS_PASSWORD_TRIES >= int(request.app.get("sensitive")):
@@ -171,7 +172,7 @@ def run():
     app.router.add_post("/{script_name}", login_required(handle))
 
     ssl_context = create_ssl_context(CERT_FILE, KEY_FILE)
-    logging.info("ssl_context is : {ssl_context}")
+    logging.info(f"ssl_context is : {ssl_context}")
     web.run_app(
         app, host=HOST, port=PORT, ssl_context=ssl_context, access_log=None
     )
