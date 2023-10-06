@@ -74,6 +74,10 @@ async def handle(request):
         )
 
 
+async def handle_status(request):
+    return web.json_response({"status": "ok"})
+
+
 async def handle_list_commands(request):
     commands = []
     for filename in os.listdir(request.app.get("scripts_folder")):
@@ -156,6 +160,7 @@ def run():
     app["sensitive"] = SENSITIVE
     app.router.add_post("/{script_name}", login_required(handle))
     app.router.add_get("/", login_required(handle_list_commands))
+    app.router.add_get("/status", handle_status)
 
     ssl_context = create_ssl_context(CERT_FILE, KEY_FILE)
 
