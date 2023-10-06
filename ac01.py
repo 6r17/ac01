@@ -68,17 +68,17 @@ async def handle(request):
                 response = web.StreamResponse()
                 await response.prepare(request)
 
-                while True:
-                    stdout_data = await process.stdout.readline()
-                    stderr_data = await process.stderr.readline()
+                # Set Content-Type header for streaming response
+                response.content_type = "application/octet-stream"
 
-                    if not stdout_data and not stderr_data:
+                while True:
+                    stdout_data = await process.stdout.read(
+                        1024
+                    )  # Read in chunks
+                    if not stdout_data:
                         break
 
-                    if stdout_data:
-                        await response.write(stdout_data)
-                    if stderr_data:
-                        await response.write(stderr_data)
+                    await response.write(stdout_data)
 
                 await response.write_eof()
 
@@ -96,11 +96,6 @@ async def handle(request):
             except Exception as e:
                 logging.error(f"Error occurred: {str(e)}")
                 return web.Response(text=f"Error: {str(e)}", status=500)
-            finally:
-                # Close the subprocess after streaming output
-                process.stdout.close()
-                process.stderr.close()
-
             return response
 
         else:
