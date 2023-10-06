@@ -159,8 +159,8 @@ def run():
     app["scripts_folder"] = SCRIPTS_FOLDER
     app["sensitive"] = SENSITIVE
     app.router.add_get("/status", handle_status)
-    app.router.add_post("/{script_name}", login_required(handle))
     app.router.add_get("/", login_required(handle_list_commands))
+    app.router.add_post("/{script_name}", login_required(handle))
 
     ssl_context = create_ssl_context(CERT_FILE, KEY_FILE)
 
