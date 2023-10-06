@@ -10,7 +10,7 @@ ERRONOUS_PASSWORD_TRIES = 0
 
 
 async def check_authenticated(request):
-    print("check_authenticated")
+    logging.info("check_authenticated")
     global ERRONOUS_PASSWORD_TRIES
     token = request.headers.get("Authorization")
     if not request.app.get("auth_password", None):
@@ -26,7 +26,7 @@ async def check_authenticated(request):
 
 
 async def login_required_middleware(request, handler):
-    print("login required middleware")
+    logging.info("login required middleware")
     authenticated = await check_authenticated(request)
     if not authenticated:
         return web.Response(text="Unauthorized", status=401)
@@ -34,7 +34,7 @@ async def login_required_middleware(request, handler):
 
 
 def login_required(handler):
-    print("login required")
+    logging.info("login required")
 
     async def wrapped_handler(request):
         return await login_required_middleware(request, handler)
@@ -44,7 +44,7 @@ def login_required(handler):
 
 @login_required
 async def handle(request):
-    print("HANDLE_SCRIPT")
+    logging.info("HANDLE_SCRIPT")
     script_name = request.match_info.get("script_name")
     if script_name:
         scripts_folder = os.path.join(
@@ -80,7 +80,7 @@ async def handle(request):
 
 
 async def handle_status(request):
-    print("HANDLE_STATUS")
+    logging.info("HANDLE_STATUS")
     return web.json_response({"status": "ok"})
 
 
@@ -98,6 +98,7 @@ def create_ssl_context(certfile, keyfile):
         ssl_context.load_cert_chain(certfile=certfile, keyfile=keyfile)
         return ssl_context
     except:
+        logging.exception("Could not instanciate ssl context")
         return None
 
 
@@ -156,7 +157,7 @@ def run():
     SENSITIVE = args.sensitive
 
     if AUTH_PASSWORD is None:
-        print(
+        logging.info(
             "Warning: No authentication password provided. Requests will not be authenticated."
         )
     app = web.Application()
@@ -169,7 +170,7 @@ def run():
     app.router.add_post("/{script_name}", login_required(handle))
 
     ssl_context = create_ssl_context(CERT_FILE, KEY_FILE)
-
+    logging.info("ssl_context is : ", ssl_context)
     web.run_app(
         app, host=HOST, port=PORT, ssl_context=ssl_context, access_log=None
     )
