@@ -76,7 +76,7 @@ async def handle(request):
 
 async def handle_list_commands(request):
     commands = []
-    for filename in os.listdir(SCRIPTS_FOLDER):
+    for filename in os.listdir(request.app.get("scripts_folder")):
         if filename.endswith(".sh") or filename.endswith(".py"):
             commands.append(filename)
     return web.json_response({"commands": commands})
@@ -91,7 +91,7 @@ def create_ssl_context(certfile, keyfile):
         return None
 
 
-if __name__ == "__main__":
+def run():
     parser = argparse.ArgumentParser(
         description="Run a server for executing custom scripts over HTTPS."
     )
@@ -160,3 +160,7 @@ if __name__ == "__main__":
     ssl_context = create_ssl_context(CERT_FILE, KEY_FILE)
 
     web.run_app(app, host="0.0.0.0", port=PORT, ssl_context=ssl_context)
+
+
+if __name__ == "__main__":
+    run()

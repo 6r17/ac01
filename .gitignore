@@ -1,0 +1,4 @@
+*.pyc
+ac01.egg-info/
+build
+jobs
