@@ -19,7 +19,7 @@ async def check_authenticated(request):
     ERRONOUS_PASSWORD_TRIES += 1
     if int(
         request.app.get("sensitive")
-    ) != -1 and ERRONOUS_PASSWORD_TRIES >= request.app.get("sensitive"):
+    ) != -1 and ERRONOUS_PASSWORD_TRIES >= int(request.app.get("sensitive")):
         os._exit(-1)
     return False
 
